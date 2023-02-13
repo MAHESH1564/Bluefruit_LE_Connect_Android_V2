@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.adafruit.bluefruit.le.connect.R;
 import com.adafruit.bluefruit.le.connect.app.imagetransfer.ImageTransferFragment;
-import com.adafruit.bluefruit.le.connect.app.neopixel.NeopixelFragment;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheral;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheralBattery;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheralDfu;
@@ -236,17 +235,6 @@ public class PeripheralModulesFragment extends ConnectedPeripheralFragment {
                 }
                 break;
 
-            case MODULE_CONTROLLER:
-                if (singlePeripheralIdentifier != null) {
-                    fragment = ControllerFragment.newInstance(singlePeripheralIdentifier);
-                }
-                break;
-
-            case MODULE_NEOPIXEL:
-                if (singlePeripheralIdentifier != null) {
-                    fragment = NeopixelFragment.newInstance(singlePeripheralIdentifier);
-                }
-                break;
 
             case MODULE_CALIBRATION:
                 break;
