@@ -9,8 +9,6 @@ import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheralUart;
-import com.adafruit.bluefruit.le.connect.mqtt.MqttManager;
-import com.adafruit.bluefruit.le.connect.mqtt.MqttSettings;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -34,15 +32,13 @@ public class UartPacketManagerBase implements BlePeripheralUart.UartRxHandler {
     protected Semaphore mPacketsSemaphore = new Semaphore(1, true);
     private boolean mIsPacketCacheEnabled;
     protected Context mContext;
-    protected MqttManager mMqttManager;
 
     protected long mReceivedBytes = 0;
     protected long mSentBytes = 0;
 
-    public UartPacketManagerBase(@NonNull Context context, @Nullable Listener listener, boolean isPacketCacheEnabled, @Nullable MqttManager mqttManager) {
+    public UartPacketManagerBase(@NonNull Context context, @Nullable Listener listener, boolean isPacketCacheEnabled) {
         mContext = context.getApplicationContext();
         mIsPacketCacheEnabled = isPacketCacheEnabled;
-        mMqttManager = mqttManager;
         mWeakListener = new WeakReference<>(listener);
     }
 
@@ -56,17 +52,6 @@ public class UartPacketManagerBase implements BlePeripheralUart.UartRxHandler {
         }
 
         UartPacket uartPacket = new UartPacket(identifier, UartPacket.TRANSFERMODE_RX, data);
-
-        // Mqtt publish to RX
-        if (mMqttManager != null) {
-            if (MqttSettings.isPublishEnabled(mContext)) {
-                final String topic = MqttSettings.getPublishTopic(mContext, MqttSettings.kPublishFeed_RX);
-                if (topic != null) {
-                    final int qos = MqttSettings.getPublishQos(mContext, MqttSettings.kPublishFeed_RX);
-                    mMqttManager.publish(topic, uartPacket.getData(), qos);
-                }
-            }
-        }
 
         try {
             mPacketsSemaphore.acquire();

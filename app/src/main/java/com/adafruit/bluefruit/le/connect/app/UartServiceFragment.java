@@ -76,7 +76,7 @@ public class UartServiceFragment extends UartBaseFragment {
             return;
         }
 
-        mUartData = new UartPeripheralModePacketManager(context, this, true, mMqttManager);
+        mUartData = new UartPeripheralModePacketManager(context, this, true);
         mBufferItemAdapter.setUartData(mUartData);
         mUartPeripheralService = PeripheralModeManager.getInstance().getUartPeripheralService();
         mUartPeripheralService.uartEnable(data -> mUartData.onRxDataReceived(data, null, BluetoothGatt.GATT_SUCCESS));
@@ -118,7 +118,7 @@ public class UartServiceFragment extends UartBaseFragment {
     // region Mqtt
 
     @MainThread
-    @Override
+    //@Override
     public void onMqttMessageArrived(String topic, @NonNull MqttMessage mqttMessage) {
         if (!(mUartData instanceof UartPeripheralModePacketManager)) {
             Log.e(TAG, "Error send with invalid uartData class");

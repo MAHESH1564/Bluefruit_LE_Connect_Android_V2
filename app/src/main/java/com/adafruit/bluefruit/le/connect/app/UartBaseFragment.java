@@ -45,8 +45,6 @@ import com.adafruit.bluefruit.le.connect.ble.BleUtils;
 import com.adafruit.bluefruit.le.connect.ble.UartPacket;
 import com.adafruit.bluefruit.le.connect.ble.UartPacketManagerBase;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheralUart;
-import com.adafruit.bluefruit.le.connect.mqtt.MqttManager;
-import com.adafruit.bluefruit.le.connect.mqtt.MqttSettings;
 import com.adafruit.bluefruit.le.connect.utils.KeyboardUtils;
 
 import java.text.SimpleDateFormat;
@@ -56,7 +54,7 @@ import java.util.List;
 import java.util.Locale;
 
 // TODO: register
-public abstract class UartBaseFragment extends ConnectedPeripheralFragment implements UartPacketManagerBase.Listener, MqttManager.MqttManagerListener {
+public abstract class UartBaseFragment extends ConnectedPeripheralFragment implements UartPacketManagerBase.Listener {
     // Log
     private final static String TAG = UartBaseFragment.class.getSimpleName();
 
@@ -78,8 +76,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
     protected TimestampItemAdapter mBufferItemAdapter;
     private EditText mSendEditText;
     private Button mSendButton;
-    private MenuItem mMqttMenuItem;
-    private Handler mMqttMenuItemAnimationHandler;
     private TextView mSentBytesTextView;
     private TextView mReceivedBytesTextView;
     protected Spinner mSendPeripheralSpinner;
@@ -110,8 +106,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
     private int mEolCharactersId;
 
     private final SpannableStringBuilder mTextSpanBuffer = new SpannableStringBuilder();
-
-    protected MqttManager mMqttManager;
 
     private int maxPacketsToPaintAsText;
     private int mPacketsCacheLastSize = 0;
@@ -206,16 +200,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
             if (activity != null) {
                 activity.invalidateOptionsMenu();        // update options menu with current values
             }
-
-            // Mqtt init
-            if (mMqttManager == null) {
-                mMqttManager = new MqttManager(context, this);
-                if (MqttSettings.isConnected(context)) {
-                    mMqttManager.connectFromSavedSettings();
-                }
-            } else {
-                mMqttManager.setListener(this);
-            }
         }
     }
 
@@ -240,8 +224,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
         if (activity != null) {
             activity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
-
-        updateMqttStatus();
 
         updateBytesUI();
 
@@ -276,11 +258,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
     public void onDestroy() {
         mUartData = null;
 
-        // Disconnect mqtt
-        if (mMqttManager != null) {
-            mMqttManager.disconnect();
-        }
-
         // Uart
         if (mBlePeripheralsUart != null) {
             for (BlePeripheralUart blePeripheralUart : mBlePeripheralsUart) {
@@ -297,11 +274,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.menu_uart, menu);
-
-        // Mqtt
-        mMqttMenuItem = menu.findItem(R.id.action_mqttsettings);
-        mMqttMenuItemAnimationHandler = new Handler();
-        mMqttMenuItemAnimationRunnable.run();
 
         // DisplayMode
         MenuItem displayModeMenuItem = menu.findItem(R.id.action_displaymode);
@@ -362,14 +334,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
 
     }
 
-
-    @Override
-    public void onDestroyOptionsMenu() {
-        super.onDestroyOptionsMenu();
-
-        mMqttMenuItemAnimationHandler.removeCallbacks(mMqttMenuItemAnimationRunnable);
-    }
-
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         FragmentActivity activity = getActivity();
@@ -383,16 +347,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
                 CommonHelpFragment helpFragment = CommonHelpFragment.newInstance(getString(R.string.uart_help_title), getString(R.string.uart_help_text_android));
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction()
                         .replace(R.id.contentLayout, helpFragment, "Help");
-                fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
-                return true;
-            }
-
-            case R.id.action_mqttsettings: {
-                FragmentManager fragmentManager = activity.getSupportFragmentManager();
-                MqttSettingsFragment mqttSettingsFragment = MqttSettingsFragment.newInstance();
-                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction()
-                        .replace(R.id.contentLayout, mqttSettingsFragment, "MqttSettings");
                 fragmentTransaction.addToBackStack(null);
                 fragmentTransaction.commit();
                 return true;
@@ -600,40 +554,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
     }
 
     // endregion
-
-    // region Mqtt UI
-    private final Runnable mMqttMenuItemAnimationRunnable = new Runnable() {
-        @Override
-        public void run() {
-            updateMqttStatus();
-            mMqttMenuItemAnimationHandler.postDelayed(mMqttMenuItemAnimationRunnable, 500);
-        }
-    };
-    private int mMqttMenuItemAnimationFrame = 0;
-
-    @MainThread
-    private void updateMqttStatus() {
-        if (mMqttMenuItem == null) {
-            return;      // Hack: Sometimes this could have not been initialized so we don't update icons
-        }
-
-        MqttManager.MqqtConnectionStatus status = mMqttManager.getClientStatus();
-
-        if (status == MqttManager.MqqtConnectionStatus.CONNECTING) {
-            final int[] kConnectingAnimationDrawableIds = {R.drawable.mqtt_connecting1, R.drawable.mqtt_connecting2, R.drawable.mqtt_connecting3};
-            mMqttMenuItem.setIcon(kConnectingAnimationDrawableIds[mMqttMenuItemAnimationFrame]);
-            mMqttMenuItemAnimationFrame = (mMqttMenuItemAnimationFrame + 1) % kConnectingAnimationDrawableIds.length;
-        } else if (status == MqttManager.MqqtConnectionStatus.CONNECTED) {
-            mMqttMenuItem.setIcon(R.drawable.mqtt_connected);
-            mMqttMenuItemAnimationHandler.removeCallbacks(mMqttMenuItemAnimationRunnable);
-        } else {
-            mMqttMenuItem.setIcon(R.drawable.mqtt_disconnected);
-            mMqttMenuItemAnimationHandler.removeCallbacks(mMqttMenuItemAnimationRunnable);
-        }
-    }
-
-    // endregion
-
     // region Eol
 
     private String getEolCharacters() {
@@ -739,22 +659,6 @@ public abstract class UartBaseFragment extends ConnectedPeripheralFragment imple
     @Override
     public void onUartPacket(UartPacket packet) {
         updateBytesUI();
-    }
-
-    // endregion
-
-    // region MqttManagerListener
-
-    @MainThread
-    @Override
-    public void onMqttConnected() {
-        updateMqttStatus();
-    }
-
-    @MainThread
-    @Override
-    public void onMqttDisconnected() {
-        updateMqttStatus();
     }
 
     // endregion

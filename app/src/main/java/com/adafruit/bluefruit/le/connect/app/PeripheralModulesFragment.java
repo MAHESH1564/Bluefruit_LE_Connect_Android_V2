@@ -22,10 +22,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.adafruit.bluefruit.le.connect.R;
-import com.adafruit.bluefruit.le.connect.app.imagetransfer.ImageTransferFragment;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheral;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheralBattery;
-import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheralDfu;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheralUart;
 import com.adafruit.bluefruit.le.connect.ble.central.BleScanner;
 import com.adafruit.bluefruit.le.connect.style.RssiUI;
@@ -241,10 +239,6 @@ public class PeripheralModulesFragment extends ConnectedPeripheralFragment {
 
             case MODULE_THERMALCAMERA:
                 fragment = ThermalCameraFragment.newInstance(singlePeripheralIdentifier);
-                break;
-
-            case MODULE_IMAGETRANSFER:
-                fragment = ImageTransferFragment.newInstance(singlePeripheralIdentifier);
                 break;
 
             case MODULE_DFU:
@@ -479,14 +473,9 @@ public class PeripheralModulesFragment extends ConnectedPeripheralFragment {
                 return new int[]{};
             } else {
                 final boolean hasUart = BlePeripheralUart.hasUart(mBlePeripheral);
-                final boolean hasDfu = BlePeripheralDfu.hasDfu(mBlePeripheral);
 
-                if (hasUart && hasDfu) {
-                    return new int[]{MODULE_INFO, MODULE_UART, MODULE_PLOTTER, MODULE_PINIO, MODULE_CONTROLLER, MODULE_NEOPIXEL, MODULE_THERMALCAMERA, MODULE_IMAGETRANSFER, MODULE_DFU};
-                } else if (hasUart) {
-                    return new int[]{MODULE_INFO, MODULE_UART, MODULE_PLOTTER, MODULE_PINIO, MODULE_CONTROLLER, MODULE_THERMALCAMERA, MODULE_IMAGETRANSFER};
-                } else if (hasDfu) {
-                    return new int[]{MODULE_INFO, MODULE_DFU};
+                if (hasUart) {
+                    return new int[]{MODULE_INFO, MODULE_UART};
                 } else {
                     return new int[]{MODULE_INFO};
                 }

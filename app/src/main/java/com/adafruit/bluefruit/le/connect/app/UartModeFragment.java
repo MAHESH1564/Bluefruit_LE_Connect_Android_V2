@@ -193,7 +193,7 @@ public class UartModeFragment extends UartBaseFragment {
         if (context == null) {
             return;
         }
-        mUartData = new UartPacketManager(context, this, true, mMqttManager);           // Note: mqttmanager should have been initialized previously
+        mUartData = new UartPacketManager(context, this, true);           // Note: mqttmanager should have been initialized previously
         mBufferItemAdapter.setUartData(mUartData);
 
         // Colors assigned to peripherals
@@ -330,7 +330,7 @@ public class UartModeFragment extends UartBaseFragment {
     // region Mqtt
 
     @MainThread
-    @Override
+    //@Override
     public void onMqttMessageArrived(String topic, @NonNull MqttMessage mqttMessage) {
         if (!(mUartData instanceof UartPacketManager)) {
             Log.e(TAG, "Error send with invalid uartData class");

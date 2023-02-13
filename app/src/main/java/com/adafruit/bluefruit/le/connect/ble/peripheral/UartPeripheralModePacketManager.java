@@ -7,8 +7,6 @@ import android.util.Log;
 
 import com.adafruit.bluefruit.le.connect.ble.UartPacket;
 import com.adafruit.bluefruit.le.connect.ble.UartPacketManagerBase;
-import com.adafruit.bluefruit.le.connect.mqtt.MqttManager;
-import com.adafruit.bluefruit.le.connect.mqtt.MqttSettings;
 
 import java.nio.charset.Charset;
 
@@ -17,8 +15,8 @@ public class UartPeripheralModePacketManager extends UartPacketManagerBase {
     private final static String TAG = UartPeripheralModePacketManager.class.getSimpleName();
 
     // region Lifecycle
-    public UartPeripheralModePacketManager(@NonNull Context context, @Nullable Listener listener, boolean isPacketCacheEnabled, @Nullable MqttManager mqttManager) {
-        super(context, listener, isPacketCacheEnabled, mqttManager);
+    public UartPeripheralModePacketManager(@NonNull Context context, @Nullable Listener listener, boolean isPacketCacheEnabled) {
+        super(context, listener, isPacketCacheEnabled);
     }
     // endregion
 
@@ -30,16 +28,6 @@ public class UartPeripheralModePacketManager extends UartPacketManagerBase {
     }
 
     public void send(@NonNull UartPeripheralService uartPeripheralService, @NonNull String text, boolean wasReceivedFromMqtt) {
-        if (mMqttManager != null) {
-            // Mqtt publish to TX
-            if (MqttSettings.isPublishEnabled(mContext)) {
-                final String topic = MqttSettings.getPublishTopic(mContext, MqttSettings.kPublishFeed_TX);
-                if (topic != null) {
-                    final int qos = MqttSettings.getPublishQos(mContext, MqttSettings.kPublishFeed_TX);
-                    mMqttManager.publish(topic, text, qos);
-                }
-            }
-        }
 
         // Create data and send to Uart
         byte[] data = text.getBytes(Charset.forName("UTF-8"));
@@ -58,12 +46,6 @@ public class UartPeripheralModePacketManager extends UartPacketManagerBase {
             mMainHandler.post(() -> listener.onUartPacket(uartPacket));
         }
 
-        final boolean isMqttEnabled = mMqttManager != null;
-        final boolean shouldBeSent = !wasReceivedFromMqtt || (isMqttEnabled && MqttSettings.getSubscribeBehaviour(mContext) == MqttSettings.kSubscribeBehaviour_Transmit);
-
-        if (shouldBeSent) {
-            send(uartPeripheralService, data);
-        }
     }
 
     // endregion
