@@ -223,22 +223,8 @@ public class PeripheralModulesFragment extends ConnectedPeripheralFragment {
                 fragment = UartModeFragment.newInstance(singlePeripheralIdentifier);
                 break;
 
-            case MODULE_PLOTTER:
-                fragment = PlotterFragment.newInstance(singlePeripheralIdentifier);
-                break;
-
-            case MODULE_PINIO:
-                if (singlePeripheralIdentifier != null) {
-                    fragment = PinIOFragment.newInstance(singlePeripheralIdentifier);
-                }
-                break;
-
 
             case MODULE_CALIBRATION:
-                break;
-
-            case MODULE_THERMALCAMERA:
-                fragment = ThermalCameraFragment.newInstance(singlePeripheralIdentifier);
                 break;
 
             case MODULE_DFU:
@@ -394,46 +380,6 @@ public class PeripheralModulesFragment extends ConnectedPeripheralFragment {
                         case MODULE_UART:
                             iconDrawableId = R.drawable.tab_uart_icon;
                             titleId = R.string.uart_tab_title;
-                            break;
-
-                        case MODULE_PLOTTER:
-                            iconDrawableId = R.drawable.tab_plotter_icon;
-                            titleId = R.string.plotter_tab_title;
-                            break;
-
-                        case MODULE_PINIO:
-                            iconDrawableId = R.drawable.tab_pinio_icon;
-                            titleId = R.string.pinio_tab_title;
-                            break;
-
-                        case MODULE_CONTROLLER:
-                            iconDrawableId = R.drawable.tab_controller_icon;
-                            titleId = R.string.controller_tab_title;
-                            break;
-
-                        case MODULE_NEOPIXEL:
-                            iconDrawableId = R.drawable.tab_neopixel_icon;
-                            titleId = R.string.neopixels_tab_title;
-                            break;
-
-                        case MODULE_CALIBRATION:
-                            iconDrawableId = R.drawable.tab_calibration_icon;
-                            titleId = R.string.calibration_tab_title;
-                            break;
-
-                        case MODULE_THERMALCAMERA:
-                            iconDrawableId = R.drawable.tab_thermalcamera_icon;
-                            titleId = R.string.thermalcamera_tab_title;
-                            break;
-
-                        case MODULE_IMAGETRANSFER:
-                            iconDrawableId = R.drawable.tab_imagetransfer_icon;
-                            titleId = R.string.imagetransfer_tab_title;
-                            break;
-
-                        case MODULE_DFU:
-                            iconDrawableId = R.drawable.tab_dfu_icon;
-                            titleId = R.string.dfu_tab_title;
                             break;
                     }
 
