@@ -226,12 +226,6 @@ public class PeripheralModulesFragment extends ConnectedPeripheralFragment {
 
             case MODULE_CALIBRATION:
                 break;
-
-            case MODULE_DFU:
-                if (singlePeripheralIdentifier != null) {
-                    fragment = DfuFragment.newInstance(singlePeripheralIdentifier);
-                }
-                break;
         }
 
         if (fragment != null && mListener != null) {

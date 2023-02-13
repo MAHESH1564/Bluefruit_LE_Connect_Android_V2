@@ -22,7 +22,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.adafruit.bluefruit.le.connect.BluefruitApplication;
@@ -30,18 +29,13 @@ import com.adafruit.bluefruit.le.connect.R;
 import com.adafruit.bluefruit.le.connect.ble.BleUtils;
 import com.adafruit.bluefruit.le.connect.ble.central.BleManager;
 import com.adafruit.bluefruit.le.connect.ble.central.BlePeripheral;
-import com.adafruit.bluefruit.le.connect.dfu.DfuProgressFragmentDialog;
-import com.adafruit.bluefruit.le.connect.dfu.DfuService;
-import com.adafruit.bluefruit.le.connect.dfu.DfuUpdater;
-import com.adafruit.bluefruit.le.connect.dfu.ReleasesParser;
-import com.adafruit.bluefruit.le.connect.models.DfuViewModel;
 import com.adafruit.bluefruit.le.connect.utils.DialogUtils;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.security.ProviderInstaller;
 
-public class MainActivity extends AppCompatActivity implements ScannerFragment.ScannerFragmentListener, PeripheralModulesFragment.PeripheralModulesFragmentListener, DfuProgressFragmentDialog.Listener {
+public class MainActivity extends AppCompatActivity implements ScannerFragment.ScannerFragmentListener, PeripheralModulesFragment.PeripheralModulesFragmentListener {
 
     // Constants
     private final static String TAG = MainActivity.class.getSimpleName();
@@ -55,9 +49,6 @@ public class MainActivity extends AppCompatActivity implements ScannerFragment.S
     // Activity request codes (used for onActivityResult)
     private static final int kActivityRequestCode_EnableBluetooth = 1;
     public static final int kActivityRequestCode_PlayServicesAvailability = 2;
-
-    // Models
-    private DfuViewModel mDfuViewModel;
 
     // Data
     private MainFragment mMainFragment;
@@ -89,15 +80,6 @@ public class MainActivity extends AppCompatActivity implements ScannerFragment.S
                 mMainFragment.disconnectAllPeripherals();
             }
         });
-
-        // ViewModels
-        mDfuViewModel = new ViewModelProvider(this).get(DfuViewModel.class);
-
-        // Check if there is any update to the firmware database
-        if (savedInstanceState == null) {
-            updateAndroidSecurityProvider(this);        // Call this before refreshSoftwareUpdatesDatabase because SSL connections will fail on Android 4.4 if this is not executed:  https://stackoverflow.com/questions/29916962/javax-net-ssl-sslhandshakeexception-javax-net-ssl-sslprotocolexception-ssl-han
-            DfuUpdater.refreshSoftwareUpdatesDatabase(this, success -> Log.d(TAG, "refreshSoftwareUpdatesDatabase completed. Success: " + success));
-        }
     }
 
     protected void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
@@ -337,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements ScannerFragment.S
         final int numConnectedPeripherals = BleManager.getInstance().getConnectedDevices().size();
         final boolean isLastConnectedPeripheral = numConnectedPeripherals == 0;
 
-        if (isLastConnectedPeripheral && (!kAvoidPoppingFragmentsWhileOnDfu || !isIsDfuInProgress())) {
+        if (isLastConnectedPeripheral && (!kAvoidPoppingFragmentsWhileOnDfu)) {
             Log.d(TAG, "No peripherals connected. Pop all fragments");
             FragmentManager fragmentManager = getSupportFragmentManager();
             fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
@@ -400,116 +382,5 @@ public class MainActivity extends AppCompatActivity implements ScannerFragment.S
             }
         }
     };
-    // endregion
-
-
-    // region DFU
-    private DfuProgressFragmentDialog mDfuProgressDialog;
-
-    private void dismissDfuProgressDialog() {
-        if (mDfuProgressDialog != null) {
-            mDfuProgressDialog.dismiss();
-            mDfuProgressDialog = null;
-        }
-    }
-
-    private boolean mIsDfuInProgress = false;
-
-    public boolean isIsDfuInProgress() {
-        return mIsDfuInProgress;
-    }
-
-    public void startUpdate(@NonNull BlePeripheral blePeripheral, @NonNull ReleasesParser.BasicVersionInfo versionInfo) {
-        dismissDfuProgressDialog();
-
-        String message = getString(versionInfo.fileType == DfuService.TYPE_APPLICATION ? R.string.dfu_download_firmware_message : R.string.dfu_download_bootloader_message);
-        mDfuProgressDialog = DfuProgressFragmentDialog.newInstance(blePeripheral.getDevice().getAddress(), message);
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        mDfuProgressDialog.show(fragmentManager, null);
-        fragmentManager.executePendingTransactions();
-
-        mDfuProgressDialog.setIndeterminate(true);
-        mDfuProgressDialog.setOnCancelListener(dialog -> {
-            mDfuViewModel.cancelInstall();
-            dfuFinished();
-        });
-
-        mIsDfuInProgress = true;
-        mDfuViewModel.downloadAndInstall(this, blePeripheral, versionInfo, new DfuUpdater.DownloadStateListener() {
-            @Override
-            public void onDownloadStarted(int type) {
-                mDfuProgressDialog.setIndeterminate(true);
-                mDfuProgressDialog.setMessage(type == DfuUpdater.kDownloadOperation_Software_Hex ? R.string.dfu_download_hex_message : R.string.dfu_download_init_message);
-            }
-
-            @Override
-            public void onDownloadProgress(int percent) {
-                if (mDfuProgressDialog != null) {       // Check null (Google crash logs)
-                    mDfuProgressDialog.setIndeterminate(false);
-                    mDfuProgressDialog.setProgress(percent);
-                }
-            }
-
-            @Override
-            public void onDownloadFailed() {
-                dismissDfuProgressDialog();
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle(R.string.dialog_error).setMessage(R.string.dfu_download_error_message)
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show();
-            }
-        });
-    }
-
-    // endregion
-
-    private void dfuFinished() {
-
-        if (kAvoidPoppingFragmentsWhileOnDfu) {
-            popFragmentsIfNoPeripheralsConnected();
-        } else {
-            mMainFragment.startScanning();
-        }
-    }
-
-    // region DfuProgressFragmentDialog.Listener
-
-    @Override
-    public void onDeviceDisconnected(String deviceAddress) {
-        mIsDfuInProgress = false;
-        //dismissDfuProgressDialog();
-        dfuFinished();
-    }
-
-    @Override
-    public void onDfuCompleted(String deviceAddress) {
-        dismissDfuProgressDialog();
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.dfu_status_completed).setMessage(R.string.dfu_updatecompleted_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
-    @Override
-    public void onDfuAborted(String deviceAddress) {
-        dismissDfuProgressDialog();
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.dfu_status_error).setMessage(R.string.dfu_updateaborted_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
-    @Override
-    public void onError(String deviceAddress, int error, int errorType, String message) {
-        dismissDfuProgressDialog();
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.dfu_status_error).setMessage(message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
     // endregion
 }
