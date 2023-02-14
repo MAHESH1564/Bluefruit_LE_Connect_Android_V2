@@ -2,7 +2,7 @@
 
 Android app for use with Bluefruit Bluetooth LE modules and dev boards from Adafruit.
 
-##The app had depriciated files and libraries we are trying to correct the app and change it to fit our purpose by making necessary changes.
+## The app had depriciated files and libraries we are trying to correct the app and change it to fit our purpose by making necessary changes.
 
 
 ## App Versions
