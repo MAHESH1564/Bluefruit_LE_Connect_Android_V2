@@ -1,6 +1,8 @@
-# Bluefruit_LE_Connect_Android_V2
+# Bluefruit_LE_Connect_Android_V2_Updated
 
 Android app for use with Bluefruit Bluetooth LE modules and dev boards from Adafruit.
+
+##The app had depriciated files and libraries we are trying to correct the app and change it to fit our purpose by making necessary changes.
 
 
 ## App Versions
